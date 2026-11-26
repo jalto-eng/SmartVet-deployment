@@ -1,0 +1,74 @@
+[
+  {
+    "id": "SVC-001",
+    "name": "General Consultation",
+    "description": "General health consultation for pets.",
+    "duration": 30,
+    "price": null,
+    "active": true
+  },
+  {
+    "id": "SVC-002",
+    "name": "Vaccination",
+    "description": "Routine vaccination for pets.",
+    "duration": 30,
+    "price": null,
+    "active": true
+  },
+  {
+    "id": "SVC-003",
+    "name": "Wellness Examination",
+    "description": "Routine physical and wellness examination.",
+    "duration": 30,
+    "price": null,
+    "active": true
+  },
+  {
+    "id": "SVC-004",
+    "name": "Grooming",
+    "description": "Pet bathing and grooming services.",
+    "duration": 60,
+    "price": null,
+    "active": true
+  },
+  {
+    "id": "SVC-005",
+    "name": "Spay & Neuter",
+    "description": "Surgical sterilization for pets.",
+    "duration": 60,
+    "price": null,
+    "active": true
+  },
+  {
+    "id": "SVC-006",
+    "name": "Laboratory Test",
+    "description": "Diagnostic laboratory testing.",
+    "duration": 30,
+    "price": null,
+    "active": true
+  },
+  {
+    "id": "SVC-007",
+    "name": "Tick & Flea Treatment",
+    "description": "Treatment for ticks and fleas.",
+    "duration": 30,
+    "price": null,
+    "active": true
+  },
+  {
+    "id": "SVC-008",
+    "name": "Deworming",
+    "description": "Routine deworming treatment.",
+    "duration": 30,
+    "price": null,
+    "active": true
+  },
+  {
+    "id": "f5af6409-e755-4a2e-a390-c964285cdeb8",
+    "name": "trw",
+    "description": "evvew",
+    "duration": 30,
+    "price": null,
+    "active": false
+  }
+]

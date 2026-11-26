@@ -1,0 +1,13 @@
+{
+  "clinicName": "SmartVet",
+  "contactNumber": "",
+  "email": "",
+  "address": "",
+  "cancellationCutoffHours": 2,
+  "reschedulingCutoffHours": 2,
+  "admin": {
+    "username": "admin",
+    "passwordHash": null,
+    "salt": null
+  }
+}
