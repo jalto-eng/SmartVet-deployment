@@ -1,3 +1,6 @@
+import TimePicker from './TimePicker'
+import SmartCalendar from './SmartCalendar'
+import SecondService from './SecondService'
 import { useState, useEffect } from 'react'
 import { Search, X, CalendarDays } from 'lucide-react'
 
@@ -12,6 +15,7 @@ const [availabilityError, setAvailabilityError] = useState('')
 const [modifyForm, setModifyForm] = useState({
   contactNumber: '',
   service: '',
+  secondService: '',
   date: '',
   time: ''
 })
@@ -130,7 +134,8 @@ function openModifyForm() {
 }
   setModifyForm({
     contactNumber: '',
-    service: appointment.service,
+    service: appointment.services?.[0]?.name || appointment.service,
+    secondService: appointment.services?.[1]?.name || '',
     date: appointment.date,
     time: appointment.time
   })
@@ -144,6 +149,7 @@ function handleModifyChange(e) {
 
   setModifyForm(prev => ({
     ...prev,
+    ...(name === 'service' ? { secondService: '', date: '', time: '' } : name === 'secondService' ? { date: '', time: '' } : name === 'date' ? { time: '' } : {}),
     [name]: name === 'contactNumber' ? value.replace(/\D/g, '').slice(0, 11) : value
   }))
 }
@@ -172,6 +178,7 @@ useEffect(() => {
       const params = new URLSearchParams({
         date: modifyForm.date,
         service: modifyForm.service,
+        secondService: modifyForm.secondService || '',
         referenceNumber: appointment.referenceNumber,
         contactNumber: modifyForm.contactNumber
       })
@@ -219,6 +226,7 @@ useEffect(() => {
   showModify,
   modifyForm.date,
   modifyForm.service,
+  modifyForm.secondService,
   modifyForm.contactNumber,
   appointment
 ])
@@ -457,6 +465,7 @@ setLoading(true)
                   ['Reference Number', appointment.referenceNumber],
                   ['Pet Name', appointment.petName],
                   ['Service', appointment.service],
+                ['Total duration', `${appointment.serviceDuration || 30} minutes`],
                   ['Date', appointment.date],
                   ['Time', appointment.time]
                 ].map(([label, value]) => (
@@ -537,46 +546,19 @@ setLoading(true)
   </p>
 )}
         </label>
+<SecondService services={services} first={modifyForm.service} value={modifyForm.secondService} onChange={value => handleModifyChange({target: {name: "secondService", value}})} />
+
 
         <label className="block">
           Preferred Date
 
-          <input
-            type="date"
-            name="date"
-            value={modifyForm.date}
-            onChange={handleModifyChange}
-            min={new Date().toLocaleDateString('en-CA', {
-              timeZone: 'Asia/Manila'
-            })}
-            className="w-full border border-slate-300 rounded-lg p-3 mt-1"
-            required
-          />
+          <SmartCalendar service={modifyForm.service} secondService={modifyForm.secondService} value={modifyForm.date} onChange={value => handleModifyChange({target: {name: "date", value}})} referenceNumber={appointment.referenceNumber} contactNumber={modifyForm.contactNumber} />
         </label>
 
         <label className="block">
   Preferred Time
 
-  <select
-    name="time"
-    value={modifyForm.time}
-    onChange={handleModifyChange}
-    className="w-full border border-slate-300 rounded-lg p-3 mt-1"
-    disabled={
-  !modifyForm.date ||
-  !modifyForm.service ||
-  loadingTimes ||
-  !!availabilityError ||
-  !!scheduleMessage ||
-  times.length === 0
-}
-  >
-    <option value="">Select a time</option>
-
-    {times.filter(time => !bookedTimes.includes(time)).map(time => (
-      <option key={time} value={time}>{time}</option>
-    ))}
-  </select>
+  <TimePicker value={modifyForm.time} onChange={value => handleModifyChange({target: {name: 'time', value}})} times={times} bookedTimes={bookedTimes} disabled={!modifyForm.date || !modifyForm.service || loadingTimes || !!availabilityError || !!scheduleMessage || times.length === 0} placeholder={!modifyForm.date ? 'Select a date first' : loadingTimes ? 'Checking availability...' : availabilityError ? 'Availability unavailable' : 'Select a time'} />
 
   {loadingTimes && (
     <p className="text-sm text-slate-500 mt-2">

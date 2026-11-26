@@ -1,3 +1,6 @@
+import TimePicker from './TimePicker'
+import SmartCalendar from './SmartCalendar'
+import SecondService from './SecondService'
 
 import { useState, useEffect } from 'react'
 import { CalendarDays, X, PawPrint } from 'lucide-react'
@@ -33,6 +36,7 @@ const [submitting, setSubmitting] = useState(false)
     age: '',
     ageUnit: 'Years',
     service: initialService,
+    secondService: '',
     date: '',
     time: '',
     notes: ''
@@ -72,6 +76,7 @@ function renderError(name) {
 
   setForm(prev => ({
     ...prev,
+    ...(name === 'service' ? { secondService: '', date: '', time: '' } : name === 'secondService' ? { date: '', time: '' } : name === 'date' ? { time: '' } : {}),
     [name]: name === 'contactNumber' ? value.replace(/\D/g, '').slice(0, 11) : value,
     ...(name === 'species' && value !== 'Other' ? { otherSpecies: '' } : {})
   }))
@@ -111,7 +116,8 @@ function renderError(name) {
     try {
       const params = new URLSearchParams({
         date: form.date,
-        service: form.service
+        service: form.service,
+        secondService: form.secondService || ''
       })
 
       const response = await fetch(
@@ -146,7 +152,7 @@ function renderError(name) {
 
   return () => controller.abort()
 
-}, [form.date, form.service])
+}, [form.date, form.service, form.secondService])
 async function handleSubmit(e) {
   e.preventDefault()
 
@@ -547,58 +553,19 @@ if (bookingSuccess) {
     </p>
   )}
 </label>
+<SecondService services={services} first={form.service} value={form.secondService} onChange={value => handleChange({target: {name: "secondService", value}})} />
+
 
               <div className="grid md:grid-cols-2 gap-4">
 
                 <label>
                   Preferred Date
-                  <input
-                    type="date"
-                    name="date"
-                    min={today}
-                    value={form.date}
-                    onChange={handleChange}
-                    className={inputStyle}
-                    required
-                  />
+                  <SmartCalendar service={form.service} secondService={form.secondService} value={form.date} onChange={value => handleChange({target: {name: "date", value}})} />
                 </label>
 
                 <label>
                   Preferred Time
-                  <select
-  name="time"
-  value={form.time}
-  onChange={handleChange}
-  className={inputStyle}
-  disabled={
-  !form.date ||
-  !form.service ||
-  loadingTimes ||
-  !!availabilityError ||
-  !!scheduleMessage ||
-  times.length === 0
-}
-  required
->
-  <option value="">
-    {!form.date
-      ? 'Select a date first'
-      : loadingTimes
-      ? 'Checking availability...'
-      : availabilityError
-      ? 'Availability unavailable'
-      : 'Select a time'}
-  </option>
-
-  {times.filter(time => !bookedTimes.includes(time)).map(time => (
-    <option
-      key={time}
-      value={time}
-    >
-      {time}
-    </option>
-  ))}
-</select>
+                  <TimePicker value={form.time} onChange={value => handleChange({target: {name: 'time', value}})} times={times} bookedTimes={bookedTimes} disabled={!form.date || !form.service || loadingTimes || !!availabilityError || !!scheduleMessage || times.length === 0} placeholder={!form.date ? 'Select a date first' : loadingTimes ? 'Checking availability...' : availabilityError ? 'Availability unavailable' : 'Select a time'} />
 {scheduleMessage && (
   <div className="bg-amber-50 border border-amber-200 text-amber-700 text-sm rounded-lg p-3 mt-2">
     {scheduleMessage}

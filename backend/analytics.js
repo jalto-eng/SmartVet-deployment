@@ -151,12 +151,9 @@ function registerAnalyticsRoutes(
         const serviceMap = new Map()
 
         appointments.forEach(item => {
-          const service = item.service || 'Unknown'
-
-          serviceMap.set(
-            service,
-            (serviceMap.get(service) || 0) + 1
-          )
+          for (const service of (item.services?.map(s => s.name) || [item.service || 'Unknown'])) {
+            serviceMap.set(service, (serviceMap.get(service) || 0) + 1)
+          }
         })
 
         const popularServices = Array.from(

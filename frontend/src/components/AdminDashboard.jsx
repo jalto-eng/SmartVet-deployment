@@ -467,6 +467,7 @@ const cancellationRequests = appointments.filter(
                 ['Pet', item.petName],
                 ['Contact Number', item.contactNumber],
                 ['Service', item.service],
+                ['Total duration', `${item.serviceDuration || 30} minutes`],
                 ['Date', item.date],
                 ['Time', item.time]
               ].map(([label, value]) => (
@@ -977,6 +978,7 @@ const cancellationRequests = appointments.filter(
                 ['Breed', selected.breed],
                 ['Age', `${selected.age} ${selected.ageUnit || 'Years'}`],
                 ['Service', selected.service],
+                ['Total duration', `${selected.serviceDuration || 30} minutes`],
                 ['Date', selected.date],
                 ['Time', selected.time],
                 ['Status', selected.status],

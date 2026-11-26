@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import PetAgeCalculator from './components/PetAgeCalculator'
+import { useState, useEffect, useRef } from 'react'
 import BookingForm from './components/BookingForm'
 import TrackAppointment from './components/TrackAppointment'
 import AdminLogin from './components/AdminLogin'
@@ -12,12 +13,16 @@ import {
   Clock,
   ArrowRight,
   Search,
-  UserRound
+  UserRound, ArrowUp
 } from 'lucide-react'
 import { Scissors, Cross, FlaskConical, Pill } from 'lucide-react'
 import AdminDashboard from './components/AdminDashboard'
 
 function App() {
+  const navRef = useRef(null)
+  const [activeSection, setActiveSection] = useState('home')
+  const [showTop, setShowTop] = useState(false)
+  const [navHeight, setNavHeight] = useState(100)
   const [initialService, setInitialService] = useState('')
   const [clinicHours, setClinicHours] = useState(null)
   const [showBooking, setShowBooking] = useState(false)
@@ -119,6 +124,61 @@ async function handleAdminLogout() {
   }
 }
 
+  useEffect(() => {
+    if (adminSession || !navRef.current) return
+    const nav = navRef.current
+    const update = () => {
+      const height = nav.getBoundingClientRect().height
+      setNavHeight(height)
+      let current = 'home'
+      for (const id of ['home', 'services', 'pet-age', 'about']) {
+        const section = document.getElementById(id)
+        if (section && section.getBoundingClientRect().top <= height + Math.min(120, (window.innerHeight - height) / 3)) current = id
+      }
+      const atBottom = window.scrollY > 0 && window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 4
+      setActiveSection(atBottom ? 'about' : current)
+      setShowTop(window.scrollY > 350)
+    }
+    const observer = new ResizeObserver(update)
+    observer.observe(nav)
+    window.addEventListener('scroll', update, { passive: true })
+    window.addEventListener('resize', update)
+    update()
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+    }
+  }, [adminSession])
+
+  function navigate(event, id) {
+    event.preventDefault()
+    const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'
+    const section = document.getElementById(id)
+    if (!section) return
+    if (window.location.hash !== `#${id}`) window.history.pushState(null, '', `#${id}`)
+    setActiveSection(id)
+    if (id === 'home') {
+  window.scrollTo({ top: 0, behavior })
+} else if (id === 'services' || id === 'pet-age') {
+  const headerHeight = navRef.current.getBoundingClientRect().height
+  const rect = section.getBoundingClientRect()
+  const availableHeight = window.innerHeight - headerHeight
+
+  const spacing = Math.max(
+    0,
+    (availableHeight - rect.height) / 2
+  )
+
+  window.scrollTo({
+    top: window.scrollY + rect.top - headerHeight - spacing,
+    behavior
+  })
+} else {
+  section.scrollIntoView({ behavior, block: 'start' })
+}
+  }
+
 if (adminSession) {
   return (
     <AdminDashboard
@@ -128,10 +188,10 @@ if (adminSession) {
   )
 }
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50" style={{ "--nav-offset": `${navHeight}px` }}>
 
       {/* Navigation */}
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
+      <nav ref={navRef} className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-4">
 
           <div className="flex items-center gap-3">
@@ -150,9 +210,13 @@ if (adminSession) {
           </div>
 
           <div className="flex flex-wrap items-center gap-5 text-sm font-medium">
-            <a href="#home" className="hover:text-teal-600">Home</a>
-            <a href="#services" className="hover:text-teal-600">Services</a>
-            <a href="#about" className="hover:text-teal-600">About</a>
+            {[[ 'home', 'Home' ], [ 'services', 'Services' ], [ 'pet-age', 'Pet Age Calculator' ], [ 'about', 'About' ]].map(([id, label]) => (
+              <a key={id} href={`#${id}`} onClick={event => navigate(event, id)}
+                aria-current={activeSection === id ? 'location' : undefined}
+                className={`border-b-2 pb-1 ${activeSection === id ? 'border-teal-600 text-teal-700 font-semibold' : 'border-transparent hover:text-teal-600'}`}>
+                {label}
+              </a>
+            ))}
 
             <button
               onClick={() => setShowAdminLogin(true)}
@@ -168,8 +232,8 @@ if (adminSession) {
 
       {/* Hero Section */}
       <section
-        id="home"
-        className="bg-gradient-to-br from-teal-50 to-emerald-100 px-6 py-24"
+        id="home" style={{ scrollMarginTop: "var(--nav-offset)", minHeight: `calc(100dvh - ${navHeight}px)` }}
+        className="bg-gradient-to-br from-teal-50 to-emerald-100 px-6 py-24 flex items-center"
       >
         <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center">
 
@@ -229,7 +293,7 @@ if (adminSession) {
       </section>
 
       {/* Services Section */}
-      <section id="services" className="max-w-7xl mx-auto px-6 py-20">
+      <section id="services" style={{ scrollMarginTop: "var(--nav-offset)" }} className="max-w-7xl mx-auto px-6 py-20">
 
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold">
@@ -283,9 +347,18 @@ if (adminSession) {
         </div>
       </section>
 
-      {/* About Section */}
-      <section id="about" className="bg-white py-16 px-6">
+      <PetAgeCalculator />
 
+      {/* About Section */}
+      <section
+  id="about"
+  style={{
+    scrollMarginTop: "var(--nav-offset)",
+    minHeight: 0,
+    height: "auto"
+  }}
+  className="bg-white py-16 px-6"
+>
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold">
             Why Choose SmartVet?
@@ -350,6 +423,13 @@ if (adminSession) {
 
       </footer>
 
+      {showTop && !showBooking && !showTracking && !showAdminLogin && (
+        <button type="button" aria-label="Back to top" title="Back to top"
+          onClick={event => navigate(event, 'home')}
+          className="fixed bottom-5 right-5 z-40 rounded-full bg-teal-600 text-white p-3 shadow-lg hover:bg-teal-700 focus-visible:ring-2 focus-visible:ring-teal-500">
+          <ArrowUp size={22} />
+        </button>
+      )}
       {showBooking && (
   <BookingForm initialService={initialService} onClose={() => setShowBooking(false)} />
 )}

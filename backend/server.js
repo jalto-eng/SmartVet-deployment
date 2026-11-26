@@ -235,6 +235,7 @@ function publicAppointment(appointment) {
   return {
     referenceNumber: appointment.referenceNumber,
     petName: appointment.petName,
+    services: appointment.services || [{name: appointment.service, duration: appointment.serviceDuration || 30}],
     service: appointment.service,
     serviceDuration:
       appointment.serviceDuration || 30,
@@ -307,16 +308,46 @@ app.post('/api/admin/logout', requireAdmin, (req, res) => {
     message: 'Logged out successfully.'
   })
 })
+// Resolve one or two distinct active services using server-side durations.
+function resolveServices(service, secondService = '') {
+  if (typeof service !== 'string' || typeof secondService !== 'string' || !service || service === secondService) return null
+  const items = [service, ...(secondService ? [secondService] : [])].map(getActiveService)
+  if (items.some(item => !item)) return null
+  return { name: items.map(item => item.name).join(' + '), id: items[0].id,
+    duration: items.reduce((sum, item) => sum + item.duration, 0),
+    price: items.every(item => item.price != null) ? items.reduce((sum, item) => sum + item.price, 0) : null,
+    items: items.map(({id, name, duration, price}) => ({id, name, duration, price})) }
+}
+
+app.post('/api/appointments/calendar', publicLimiter, (req, res) => {
+  const { month, service, secondService, referenceNumber, contactNumber } = req.body || {}
+  if (typeof month !== 'string' || !validDate(month + '-01')) return res.status(400).json({message: 'Invalid month.'})
+  const selected = resolveServices(service, secondService)
+  if (!selected) return res.status(400).json({message: 'Select distinct active services.'})
+  const settings = readAvailability(), appointments = readAppointments(), times = generateTimeSlots(settings)
+  const own = appointments.find(a => referenceNumber && /^09[0-9]{9}$/.test(contactNumber || '') && a.referenceNumber === referenceNumber && a.contactNumber === contactNumber)
+  const today = new Date(Date.now()+8*3600000).toISOString().slice(0,10)
+  const days = {}
+  for (let i=1;i<=31;i++) {
+    const date = month + '-' + String(i).padStart(2,'0')
+    if (!validDate(date)) break
+    const closed = !settings.workingDays.includes(new Date(date+'T00:00:00Z').getUTCDay()) || settings.blockedDates.some(a=>a.date===date)
+    days[date] = date < today ? 'past' : closed ? 'closed' : times.some(time => scheduledTimestamp(date,time)>Date.now() && fitsHours(date,time,selected.duration,settings) && !overlaps(appointments,date,time,selected.duration,own?.id)) ? 'available' : 'unavailable'
+  }
+  res.json({days, duration:selected.duration})
+})
+
 // GET AVAILABLE TIME SLOTS
 
 app.get('/api/appointments/availability', (req, res) => {
-  return availabilityHandler(req, res, { date: req.query.date, service: req.query.service })
+  return availabilityHandler(req, res, { date: req.query.date, service: req.query.service, secondService: req.query.secondService })
 })
 app.post('/api/appointments/availability', publicLimiter, (req, res) => availabilityHandler(req, res, req.body || {}))
 function availabilityHandler(req, res, input) {
   const {
     date,
     service,
+    secondService,
     referenceNumber,
     contactNumber
   } = input
@@ -328,7 +359,7 @@ function availabilityHandler(req, res, input) {
   }
 
   const selectedService = service
-    ? getActiveService(service)
+    ? resolveServices(service, secondService)
     : { duration: 30 }
 
   if (!selectedService) {
@@ -442,6 +473,7 @@ app.post('/api/appointments', (req, res) => {
     age,
     ageUnit = 'Years',
     service,
+    secondService,
     date,
     time,
     notes
@@ -522,7 +554,7 @@ if (
     return res.status(400).json({ message: 'Specify the pet species (1–50 characters).' })
   }
 
-  const selectedService = getActiveService(service)
+  const selectedService = resolveServices(service, secondService)
 
   if (!selectedService) {
     return res.status(400).json({
@@ -576,6 +608,7 @@ otherSpecies: species === 'Other' ? otherSpecies.trim() : '',
 breed: breed.trim(),
 age: Number(age),
 ageUnit,
+    services: selectedService.items,
     service: selectedService.name,
     serviceId: selectedService.id,
     serviceDuration: selectedService.duration,
@@ -872,6 +905,7 @@ app.patch(
     const {
       contactNumber,
       service,
+      secondService,
       date,
       time
     } = req.body || {}
@@ -929,7 +963,7 @@ app.patch(
       })
     }
 
-    const selectedService = getActiveService(service)
+    const selectedService = resolveServices(service, secondService)
 
     if (!selectedService) {
       return res.status(400).json({
@@ -979,6 +1013,7 @@ if (
       'Please select a new schedule outside the rescheduling cutoff.'
   })
 }
+    appointment.services = selectedService.items
     appointment.service = selectedService.name
     appointment.serviceId = selectedService.id
     appointment.serviceDuration = selectedService.duration
