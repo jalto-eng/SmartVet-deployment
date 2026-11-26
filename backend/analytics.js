@@ -206,7 +206,7 @@ function registerAnalyticsRoutes(
           .map(item => ({
             referenceNumber: item.referenceNumber,
             service: item.service,
-            species: item.species,
+            species: item.species === 'Other' ? item.otherSpecies || 'Other' : item.species,
             date: item.date,
             time: item.time,
             status: item.status

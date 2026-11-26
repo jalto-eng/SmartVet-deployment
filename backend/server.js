@@ -437,8 +437,10 @@ app.post('/api/appointments', (req, res) => {
     contactNumber,
     petName,
     species,
+    otherSpecies,
     breed,
     age,
+    ageUnit = 'Years',
     service,
     date,
     time,
@@ -485,7 +487,8 @@ if (
 if (
   !['string', 'number'].includes(typeof age) ||
   String(age).trim() === '' ||
-  Number(age) > 100
+  !['Years', 'Months'].includes(ageUnit) ||
+  Number(age) > (ageUnit === 'Months' ? 1200 : 100)
 ) {
   return res.status(400).json({
     message: 'Please enter a valid pet age.'
@@ -513,6 +516,10 @@ if (
     return res.status(400).json({
       message: 'Invalid pet species.'
     })
+  }
+
+  if (species === 'Other' && (typeof otherSpecies !== 'string' || !otherSpecies.trim() || otherSpecies.trim().length > 50)) {
+    return res.status(400).json({ message: 'Specify the pet species (1–50 characters).' })
   }
 
   const selectedService = getActiveService(service)
@@ -565,8 +572,10 @@ if (
 contactNumber: contactNumber.trim(),
 petName: petName.trim(),
 species,
+otherSpecies: species === 'Other' ? otherSpecies.trim() : '',
 breed: breed.trim(),
 age: Number(age),
+ageUnit,
     service: selectedService.name,
     serviceId: selectedService.id,
     serviceDuration: selectedService.duration,

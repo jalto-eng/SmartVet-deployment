@@ -18,10 +18,17 @@ import { Scissors, Cross, FlaskConical, Pill } from 'lucide-react'
 import AdminDashboard from './components/AdminDashboard'
 
 function App() {
+  const [initialService, setInitialService] = useState('')
+  const [clinicHours, setClinicHours] = useState(null)
   const [showBooking, setShowBooking] = useState(false)
   const [showTracking, setShowTracking] = useState(false)
   const [showAdminLogin, setShowAdminLogin] = useState(false)
 const [adminSession, setAdminSession] = useState(null)
+  useEffect(() => {
+    if (adminSession) return
+    fetch('/api/availability').then(r => { if (!r.ok) throw new Error(); return r.json() }).then(setClinicHours).catch(() => setClinicHours(null))
+  }, [adminSession])
+
   const [services, setServices] = useState([])
 const [servicesError, setServicesError] = useState('')
 const [clinicSettings, setClinicSettings] = useState({
@@ -187,7 +194,7 @@ if (adminSession) {
             <div className="flex flex-wrap gap-4 mt-8">
 
               <button
-                onClick={() => setShowBooking(true)}
+                onClick={() => { setInitialService(''); setShowBooking(true) }}
                 className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-4 rounded-xl flex items-center gap-2 font-semibold"
               >
                 <CalendarDays size={20} />
@@ -247,9 +254,10 @@ if (adminSession) {
   </p>
 )}
           {services.map((service) => (
-            <div
+            <button type="button"
+              onClick={() => { setInitialService(service.name); setShowBooking(true) }}
               key={service.name}
-              className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm hover:shadow-md transition"
+              className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm hover:shadow-md transition text-left focus-visible:ring-2 focus-visible:ring-teal-500"
             >
 
               <div className="bg-teal-50 text-teal-600 w-14 h-14 rounded-xl flex items-center justify-center">
@@ -269,7 +277,7 @@ if (adminSession) {
                 {service.duration}
               </div>
 
-            </div>
+            </button>
           ))}
 
         </div>
@@ -327,47 +335,15 @@ if (adminSession) {
         </p>
 
         <div className="space-y-2 mt-5 text-sm text-teal-100">
-
-  {clinicSettings.address && (
-    <p>
-      Address: {clinicSettings.address}
-    </p>
-  )}
-
-  {clinicSettings.contactNumber && (
-    <p>
-      Contact: {clinicSettings.contactNumber}
-    </p>
-  )}
-
-  {clinicSettings.email && (
-    <p>
-      Email: {clinicSettings.email}
-    </p>
-  )}
-
-</div>
-<div className="space-y-2 mt-5 text-sm text-teal-100">
-
-  {clinicSettings.address && (
-    <p>
-      Address: {clinicSettings.address}
-    </p>
-  )}
-
-  {clinicSettings.contactNumber && (
-    <p>
-      Contact: {clinicSettings.contactNumber}
-    </p>
-  )}
-
-  {clinicSettings.email && (
-    <p>
-      Email: {clinicSettings.email}
-    </p>
-  )}
-
-</div>
+          <p>Address: {clinicSettings.address || 'To be confirmed'}</p>
+          <p>Contact: {clinicSettings.contactNumber || 'To be confirmed'}</p>
+          {clinicSettings.email && <p>Email: {clinicSettings.email}</p>}
+          <p>Operating days: {clinicHours?.workingDays?.map(day => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][day]).join(', ') || 'To be confirmed'}</p>
+          <p>Operating hours: {clinicHours ? `${clinicHours.openingTime}–${clinicHours.closingTime}` : 'To be confirmed'}</p>
+          {clinicHours?.breakEnabled && <p>Break: {clinicHours.breakStart}–{clinicHours.breakEnd}</p>}
+          <p>Emergency hotline: To be confirmed. For urgent care, visit a veterinary clinic immediately.</p>
+          <p className="text-teal-300">Academic prototype — clinic information and policies are provisional.</p>
+        </div>
 <p className="text-teal-300 text-xs mt-4">
   © 2026 SmartVet. SAD Project.
 </p>
@@ -375,7 +351,7 @@ if (adminSession) {
       </footer>
 
       {showBooking && (
-  <BookingForm onClose={() => setShowBooking(false)} />
+  <BookingForm initialService={initialService} onClose={() => setShowBooking(false)} />
 )}
 {showTracking && (
   <TrackAppointment onClose={() => setShowTracking(false)} />

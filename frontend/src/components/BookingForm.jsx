@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { CalendarDays, X, PawPrint } from 'lucide-react'
 
-function BookingForm({ onClose }) {
+function BookingForm({ onClose, initialService = '' }) {
   const [services, setServices] = useState([])
 const [servicesError, setServicesError] = useState('')
 
@@ -28,9 +28,11 @@ const [submitting, setSubmitting] = useState(false)
     contactNumber: '',
     petName: '',
     species: '',
+    otherSpecies: '',
     breed: '',
     age: '',
-    service: '',
+    ageUnit: 'Years',
+    service: initialService,
     date: '',
     time: '',
     notes: ''
@@ -70,7 +72,8 @@ function renderError(name) {
 
   setForm(prev => ({
     ...prev,
-    [name]: value
+    [name]: name === 'contactNumber' ? value.replace(/\D/g, '').slice(0, 11) : value,
+    ...(name === 'species' && value !== 'Other' ? { otherSpecies: '' } : {})
   }))
 
   setErrors(prev => ({
@@ -174,6 +177,10 @@ async function handleSubmit(e) {
     newErrors.species = 'Please select a species.'
   }
 
+  if (form.species === 'Other' && (!form.otherSpecies.trim() || form.otherSpecies.trim().length > 50)) {
+    newErrors.otherSpecies = 'Specify the species (1–50 characters).'
+  }
+
   if (!form.breed.trim()) {
     newErrors.breed = 'Breed is required.'
   } else if (form.breed.trim().length > 100) {
@@ -184,10 +191,10 @@ async function handleSubmit(e) {
     form.age.trim() === '' ||
     !Number.isFinite(Number(form.age)) ||
     Number(form.age) < 0 ||
-    Number(form.age) > 100
+    Number(form.age) > (form.ageUnit === 'Months' ? 1200 : 100)
   ) {
     newErrors.age =
-      'Pet age must be between 0 and 100 years.'
+      `Pet age must be between 0 and ${form.ageUnit === 'Months' ? 1200 : 100} ${form.ageUnit.toLowerCase()}.`
   }
 
   if (!form.service) {
@@ -378,8 +385,11 @@ if (bookingSuccess) {
   noValidate
   onSubmit={handleSubmit}
   className="p-6 space-y-6"
->"
+>
 
+          <div role="note" className="rounded-lg border border-red-300 bg-red-50 p-4 text-red-800">
+            <strong>Pet emergency?</strong> If your pet has urgent or life-threatening symptoms, contact or visit the nearest veterinary clinic immediately. Do not wait for an online appointment.
+          </div>
           {/* Owner Information */}
           <div>
             <h3 className="text-lg font-bold text-teal-700 border-b pb-3">
@@ -407,6 +417,7 @@ if (bookingSuccess) {
                 Contact Number
                 <input
   type="tel"
+  inputMode="numeric"
   name="contactNumber"
   value={form.contactNumber}
   onChange={handleChange}
@@ -457,10 +468,14 @@ if (bookingSuccess) {
                   <option value="">Select species</option>
                   <option value="Dog">Dog</option>
                   <option value="Cat">Cat</option>                 <option value="Bird">Bird</option>
-                  <option value="Other">Other</option>
+                  <option value="Other">Others</option>
                 </select>
               </label>
 
+              {form.species === 'Other' && <label>Specify Species
+                <input name="otherSpecies" value={form.otherSpecies} onChange={handleChange} maxLength={50} className={getInputStyle('otherSpecies')} required />
+                {renderError('otherSpecies')}
+              </label>}
               <label>
                 Breed
                 <input
@@ -475,12 +490,12 @@ if (bookingSuccess) {
               </label>
 
               <label>
-                Age (Years)
+                Pet Age
                 <input
   type="number"
   name="age"
   min="0"
-  max="100"
+  max={form.ageUnit === 'Months' ? 1200 : 100}
   step="any"
   value={form.age}
   onChange={handleChange}
@@ -491,6 +506,7 @@ if (bookingSuccess) {
 />
 {renderError('age')}
               </label>
+              <label>Age Unit<select name="ageUnit" value={form.ageUnit} onChange={handleChange} className={inputStyle}><option>Years</option><option>Months</option></select></label>
 
             </div>
           </div>
@@ -574,14 +590,12 @@ if (bookingSuccess) {
       : 'Select a time'}
   </option>
 
-  {times.map(time => (
+  {times.filter(time => !bookedTimes.includes(time)).map(time => (
     <option
       key={time}
       value={time}
-      disabled={bookedTimes.includes(time)}
     >
       {time}
-      {bookedTimes.includes(time) ? ' — Unavailable' : ''}
     </option>
   ))}
 </select>

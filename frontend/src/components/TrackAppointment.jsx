@@ -144,7 +144,7 @@ function handleModifyChange(e) {
 
   setModifyForm(prev => ({
     ...prev,
-    [name]: value
+    [name]: name === 'contactNumber' ? value.replace(/\D/g, '').slice(0, 11) : value
   }))
 }
 useEffect(() => {
@@ -573,22 +573,9 @@ setLoading(true)
   >
     <option value="">Select a time</option>
 
-    {times.map(time => {
-      const isBooked = bookedTimes.includes(time) &&
-        !(modifyForm.date === appointment.date &&
-          time === appointment.time)
-
-      return (
-        <option
-          key={time}
-          value={time}
-          disabled={isBooked}
-        >
-          {time}
-          {isBooked ? ' — Already Booked' : ''}
-        </option>
-      )
-    })}
+    {times.filter(time => !bookedTimes.includes(time)).map(time => (
+      <option key={time} value={time}>{time}</option>
+    ))}
   </select>
 
   {loadingTimes && (
@@ -612,7 +599,7 @@ setLoading(true)
           Verify Contact Number
 
           <input
-            type="tel"
+            type="tel" inputMode="numeric"
             name="contactNumber"
             value={modifyForm.contactNumber}
             onChange={handleModifyChange}
@@ -731,9 +718,9 @@ setLoading(true)
     </p>
 
     <input
-      type="tel"
+      type="tel" inputMode="numeric"
       value={contactNumber}
-      onChange={e => setContactNumber(e.target.value)}
+      onChange={e => setContactNumber(e.target.value.replace(/\D/g, '').slice(0, 11))}
       placeholder="09XXXXXXXXX"
       maxLength={11}
       disabled={cancelling || loading || modifying}
