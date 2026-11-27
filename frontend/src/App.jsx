@@ -133,7 +133,7 @@ async function handleAdminLogout() {
       let current = 'home'
       for (const id of ['home', 'services', 'pet-age', 'about']) {
         const section = document.getElementById(id)
-        if (section && section.getBoundingClientRect().top <= height + Math.min(120, (window.innerHeight - height) / 3)) current = id
+        if (section && section.getBoundingClientRect().top <= height + 32) current = id
       }
       const atBottom = window.scrollY > 0 && window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 4
       setActiveSection(atBottom ? 'about' : current)
@@ -158,25 +158,8 @@ async function handleAdminLogout() {
     if (!section) return
     if (window.location.hash !== `#${id}`) window.history.pushState(null, '', `#${id}`)
     setActiveSection(id)
-    if (id === 'home') {
-  window.scrollTo({ top: 0, behavior })
-} else if (id === 'services' || id === 'pet-age') {
-  const headerHeight = navRef.current.getBoundingClientRect().height
-  const rect = section.getBoundingClientRect()
-  const availableHeight = window.innerHeight - headerHeight
-
-  const spacing = Math.max(
-    0,
-    (availableHeight - rect.height) / 2
-  )
-
-  window.scrollTo({
-    top: window.scrollY + rect.top - headerHeight - spacing,
-    behavior
-  })
-} else {
-  section.scrollIntoView({ behavior, block: 'start' })
-}
+    if (id === 'home') window.scrollTo({ top: 0, behavior })
+    else section.scrollIntoView({ behavior, block: 'start' })
   }
 
 if (adminSession) {
@@ -188,7 +171,7 @@ if (adminSession) {
   )
 }
   return (
-    <div className="min-h-screen bg-slate-50" style={{ "--nav-offset": `${navHeight}px` }}>
+    <div className="min-h-screen bg-slate-50" style={{ "--nav-offset": `${navHeight + 16}px` }}>
 
       {/* Navigation */}
       <nav ref={navRef} className="bg-white border-b border-slate-200 sticky top-0 z-50">
@@ -210,7 +193,7 @@ if (adminSession) {
           </div>
 
           <div className="flex flex-wrap items-center gap-5 text-sm font-medium">
-            {[[ 'home', 'Home' ], [ 'services', 'Services' ], [ 'pet-age', 'Pet Age Calculator' ], [ 'about', 'About' ]].map(([id, label]) => (
+            {[[ 'home', 'Home' ], [ 'services', 'Services' ], [ 'pet-age', 'Pet Age and Care Guide' ], [ 'about', 'About' ]].map(([id, label]) => (
               <a key={id} href={`#${id}`} onClick={event => navigate(event, id)}
                 aria-current={activeSection === id ? 'location' : undefined}
                 className={`border-b-2 pb-1 ${activeSection === id ? 'border-teal-600 text-teal-700 font-semibold' : 'border-transparent hover:text-teal-600'}`}>
@@ -232,8 +215,8 @@ if (adminSession) {
 
       {/* Hero Section */}
       <section
-        id="home" style={{ scrollMarginTop: "var(--nav-offset)", minHeight: `calc(100dvh - ${navHeight}px)` }}
-        className="bg-gradient-to-br from-teal-50 to-emerald-100 px-6 py-24 flex items-center"
+        id="home" style={{ scrollMarginTop: "var(--nav-offset)" }}
+        className="bg-gradient-to-br from-teal-50 to-emerald-100 px-6 py-24"
       >
         <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center">
 
@@ -350,15 +333,8 @@ if (adminSession) {
       <PetAgeCalculator />
 
       {/* About Section */}
-      <section
-  id="about"
-  style={{
-    scrollMarginTop: "var(--nav-offset)",
-    minHeight: 0,
-    height: "auto"
-  }}
-  className="bg-white py-16 px-6"
->
+      <section id="about" style={{ scrollMarginTop: "var(--nav-offset)", minHeight: "calc(100vh - var(--nav-offset))" }} className="bg-white py-16 px-6">
+
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold">
             Why Choose SmartVet?
